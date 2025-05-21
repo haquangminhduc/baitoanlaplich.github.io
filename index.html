@@ -274,7 +274,7 @@
                     </div>
                 </div>
                 <div class="mt-6">
-                    <h4 class="font-semibold text-lg text-sky-700 mb-2">✨ Khám phá ràng buộc với Gemini</h4>
+                    <h4 class="font-semibold text-lg text-sky-700 mb-2">✨ Khám phá ràng buộc</h4>
                     <p class="text-sm mb-2">Nhập một mô tả về ràng buộc hoặc tình huống bạn muốn tìm hiểu thêm (ví dụ: "Giảng viên không muốn dạy sáng thứ 2 và chiều thứ 6", "Lớp học thực hành cần phòng máy tính").</p>
                     <textarea id="constraintInput" class="w-full p-2 border border-slate-300 rounded-md focus:ring-sky-500 focus:border-sky-500" rows="3" placeholder="Nhập mô tả ràng buộc ở đây..."></textarea>
                     <button id="explainConstraintBtn" class="gemini-button mt-2" onclick="explainConstraint()">Giải thích/Gợi ý về ràng buộc này <span id="constraintSpinner" class="loading-spinner hidden"></span></button>
@@ -565,7 +565,7 @@ void mutate(Chromosome& c) {
         const contentSections = document.querySelectorAll('.content-section');
         let fitnessChartInstance = null;
 
-        const GEMINI_API_KEY = ""; // Leave empty, Canvas will provide it
+        const GEMINI_API_KEY = "AIzaSyCNkrPZ1RXTOjLaBGdjlgjx6j280azbLf0"; // Leave empty, Canvas will provide it
         const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
 
         async function callGeminiAPI(promptText) {
