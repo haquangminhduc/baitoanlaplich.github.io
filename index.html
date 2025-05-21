@@ -8,11 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Visualization & Content Choices:
-        - Report Info: GA concepts (Ch1) -> Goal: Inform -> Viz/Method: Structured text, HTML/CSS diagram for GA steps -> Interaction: Click to expand details -> Justification: Clear explanation of core concepts.
+        - Report Info: GA concepts (Ch1) -> Goal: Inform -> Viz/Method: Structured text, HTML/CSS diagram for GA steps -> Interaction: Click to expand details, ✨ Click to get LLM explanation for each GA step -> Justification: Clear explanation of core concepts, enhanced with AI-powered details.
         - Report Info: Timetable representation (Ch2, Fig 2.1-2.4) -> Goal: Organize/Inform -> Viz/Method: HTML tables/divs mimicking matrix -> Interaction: Static display -> Justification: Visual clarity of data structure.
         - Report Info: Code snippets (Ch3, Fig 3.1-3.5) -> Goal: Inform -> Viz/Method: Pre-formatted code blocks -> Interaction: Static display -> Justification: Show implementation details.
         - Report Info: Experimental results (Ch3, Fitness=1, 100 generations) -> Goal: Inform/Compare (implicitly over time) -> Viz/Method: Chart.js line chart (mock data showing trend) -> Interaction: Hover for tooltips -> Justification: Dynamic visualization of algorithm performance.
-        - Report Info: Constraints (Ch2) -> Goal: Inform -> Viz/Method: Lists/Tables -> Interaction: Static -> Justification: Clear presentation of rules.
+        - Report Info: Constraints (Ch2) -> Goal: Inform -> Viz/Method: Lists/Tables, ✨ User input for constraint explanation/suggestion via LLM -> Interaction: User types constraint, clicks button, views LLM response -> Justification: Clear presentation of rules, interactive AI-powered assistance for understanding constraints.
         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
@@ -45,37 +45,37 @@
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 700px; /* Example max-width */
+            max-width: 700px; 
             margin-left: auto;
             margin-right: auto;
-            height: 350px; /* Base height */
-            max-height: 400px; /* Max height */
+            height: 350px; 
+            max-height: 400px; 
         }
-        @media (min-width: 768px) { /* md breakpoint */
+        @media (min-width: 768px) { 
             .chart-container {
                 height: 400px;
             }
         }
         h2 {
-            font-size: 1.75rem; /* text-2xl */
-            font-weight: 600; /* font-semibold */
-            color: #1e3a8a; /* Tailwind's blue-800 */
+            font-size: 1.75rem; 
+            font-weight: 600; 
+            color: #1e3a8a; 
             margin-bottom: 1rem;
-            border-bottom: 2px solid #93c5fd; /* Tailwind's blue-300 */
+            border-bottom: 2px solid #93c5fd; 
             padding-bottom: 0.5rem;
         }
         h3 {
-            font-size: 1.25rem; /* text-xl */
-            font-weight: 600; /* font-semibold */
-            color: #1d4ed8; /* Tailwind's blue-700 */
+            font-size: 1.25rem; 
+            font-weight: 600; 
+            color: #1d4ed8; 
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
         }
         .card {
             background-color: white;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-lg */
-            padding: 1.5rem; /* p-6 */
+            border-radius: 0.75rem; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); 
+            padding: 1.5rem; 
             margin-bottom: 1.5rem;
         }
         .ga-step-diagram {
@@ -85,52 +85,55 @@
             align-items: center;
         }
         .ga-step {
-            background-color: #e0f2fe; /* sky-100 */
-            color: #0c4a6e; /* sky-800 */
+            background-color: #e0f2fe; 
+            color: #0c4a6e; 
             padding: 0.75rem 1.25rem;
             border-radius: 0.5rem;
-            border: 1px solid #7dd3fc; /* sky-300 */
+            border: 1px solid #7dd3fc; 
             text-align: center;
             width: 80%;
             max-width: 300px;
+            position: relative;
         }
         .ga-arrow {
             font-size: 1.5rem;
-            color: #0ea5e9; /* sky-500 */
-        }
-        .gemini-feature-container {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px dashed #cbd5e1; /* slate-300 */
-        }
-        .gemini-textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 0.75rem;
-            border: 1px solid #cbd5e1; /* slate-300 */
-            border-radius: 0.375rem; /* rounded-md */
-            margin-bottom: 0.75rem;
-            resize: vertical;
+            color: #0ea5e9; 
         }
         .gemini-button {
-            background-color: #38bdf8; /* sky-500 */
-            color: white;
+            background-color: #fbbf24; /* amber-400 */
+            color: #78350f; /* amber-900 */
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
             font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem; /* rounded-md */
+            margin-top: 0.5rem;
+            display: inline-block;
             transition: background-color 0.3s ease;
         }
         .gemini-button:hover {
-            background-color: #0ea5e9; /* sky-600 */
+            background-color: #f59e0b; /* amber-500 */
         }
-        .gemini-output {
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #0ea5e9; /* sky-500 */
+            animation: spin 1s ease infinite;
+            display: inline-block;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .gemini-response-area {
             margin-top: 1rem;
             padding: 1rem;
-            background-color: #f1f5f9; /* slate-100 */
-            border: 1px solid #e2e8f0; /* slate-200 */
-            border-radius: 0.375rem; /* rounded-md */
-            min-height: 50px;
-            white-space: pre-wrap; /* To preserve formatting from LLM */
+            background-color: #f0f9ff; /* sky-50 */
+            border: 1px solid #e0f2fe; /* sky-100 */
+            border-radius: 0.5rem;
+            white-space: pre-wrap; /* Preserve line breaks from Gemini response */
         }
     </style>
 </head>
@@ -138,6 +141,7 @@
     <div class="container mx-auto p-4 md:p-8 max-w-5xl">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-sky-700">Đồ Án: Ứng Dụng Giải Thuật Di Truyền (GA) Để Giải Bài Toán Lập Lịch</h1>
+            <p class="text-lg text-slate-600 mt-2">Trình bày tương tác về nội dung đồ án học phần Phân Tích và Thiết Kế Thuật Toán</p>
         </header>
 
         <nav class="mb-8">
@@ -155,8 +159,8 @@
             <section id="gioiThieu" class="content-section active card">
                 <h2>Lời Nói Đầu / Giới Thiệu Chung</h2>
                 <p class="mb-4">Trong thời đại khoa học – công nghệ phát triển mạnh mẽ, các bài toán tối ưu ngày càng đóng vai trò quan trọng. Bài toán lập lịch là một trong những bài toán tối ưu điển hình, được quan tâm rộng rãi. Giải thuật Di truyền (Genetic Algorithm - GA), mô phỏng quá trình tiến hóa tự nhiên, đã chứng minh tính hiệu quả trong việc giải quyết các bài toán phức tạp này.</p>
-                <p class="mb-4">Đồ án này tập trung vào việc áp dụng kiến thức từ học phần "Phân tích và Thiết kế Thuật toán" để ứng dụng GA giải quyết bài toán lập lịch thời khóa biểu cho trường đại học. Mục tiêu không chỉ là củng cố lý thuyết về thuật toán tiến hóa mà còn rèn luyện kỹ năng phân tích, thiết kế và cài đặt thuật toán cho một bài toán thực tế. Trang này cũng tích hợp các tính năng AI tiên tiến sử dụng Gemini API để hỗ trợ phân tích và cải tiến bài toán.</p>
-                <p>Trang web này sẽ giúp bạn tìm hiểu sâu hơn về các khía cạnh của đồ án, từ cơ sở lý thuyết của GA đến cách nó được áp dụng cụ thể để giải quyết vấn đề lập lịch, cùng các công cụ AI hỗ trợ.</p>
+                <p class="mb-4">Đồ án này tập trung vào việc áp dụng kiến thức từ học phần "Phân tích và Thiết kế Thuật toán" để ứng dụng GA giải quyết bài toán lập lịch thời khóa biểu cho trường đại học. Mục tiêu không chỉ là củng cố lý thuyết về thuật toán tiến hóa mà còn rèn luyện kỹ năng phân tích, thiết kế và cài đặt thuật toán cho một bài toán thực tế.</p>
+                <p>Trang web này sẽ giúp bạn tìm hiểu sâu hơn về các khía cạnh của đồ án, từ cơ sở lý thuyết của GA đến cách nó được áp dụng cụ thể để giải quyết vấn đề lập lịch, nay được tăng cường thêm các tính năng giải thích thông minh nhờ Gemini API.</p>
             </section>
 
             <section id="tongQuanGA" class="content-section card">
@@ -181,21 +185,24 @@
 
                 <h3>1.3. Các bước cơ bản của giải thuật di truyền</h3>
                 <div class="ga-step-diagram my-6">
-                    <div class="ga-step">B1: Khởi tạo quần thể ban đầu</div>
+                    <div class="ga-step">B1: Khởi tạo quần thể ban đầu <button class="gemini-button" onclick="explainGAStep('Khởi tạo quần thể ban đầu trong Giải thuật Di truyền', 'gaStepExplanationArea')">✨ Giải thích thêm</button></div>
                     <div class="ga-arrow">↓</div>
-                    <div class="ga-step">B2: Đánh giá độ thích nghi</div>
+                    <div class="ga-step">B2: Đánh giá độ thích nghi <button class="gemini-button" onclick="explainGAStep('Đánh giá độ thích nghi trong Giải thuật Di truyền', 'gaStepExplanationArea')">✨ Giải thích thêm</button></div>
                     <div class="ga-arrow">↓</div>
-                    <div class="ga-step">B3: Kiểm tra điều kiện dừng</div>
+                    <div class="ga-step">B3: Kiểm tra điều kiện dừng <button class="gemini-button" onclick="explainGAStep('Kiểm tra điều kiện dừng trong Giải thuật Di truyền', 'gaStepExplanationArea')">✨ Giải thích thêm</button></div>
                     <div class="ga-arrow">↘ (Dừng) &nbsp;&nbsp;&nbsp; ↙ (Tiếp tục)</div>
                     <div class="ga-step" style="width: 45%; float: left; margin-right: 5%;">Lựa chọn giải pháp tốt nhất</div>
-                    <div class="ga-step" style="width: 45%; float: right;">B4: Sinh sản (Chọn lọc)</div>
+                    <div class="ga-step" style="width: 45%; float: right;">B4: Sinh sản (Chọn lọc) <button class="gemini-button" onclick="explainGAStep('Sinh sản hay Chọn lọc trong Giải thuật Di truyền', 'gaStepExplanationArea')">✨ Giải thích thêm</button></div>
                     <div style="clear:both;" class="ga-arrow">↓ (Từ Sinh sản)</div>
-                     <div class="ga-step">B5: Lai ghép</div>
+                     <div class="ga-step">B5: Lai ghép <button class="gemini-button" onclick="explainGAStep('Lai ghép trong Giải thuật Di truyền', 'gaStepExplanationArea')">✨ Giải thích thêm</button></div>
                     <div class="ga-arrow">↓</div>
-                    <div class="ga-step">B6: Đột biến</div>
+                    <div class="ga-step">B6: Đột biến <button class="gemini-button" onclick="explainGAStep('Đột biến trong Giải thuật Di truyền', 'gaStepExplanationArea')">✨ Giải thích thêm</button></div>
                     <div class="ga-arrow">↺ (Lặp lại từ B2)</div>
                 </div>
                 <div style="clear:both;"></div>
+                <div id="gaStepExplanationArea" class="gemini-response-area hidden">
+                    <p class="italic text-slate-600">Chọn một bước ở trên để xem giải thích chi tiết từ Gemini.</p>
+                </div>
 
 
                 <h3>1.4. Các toán tử của thuật toán di truyền</h3>
@@ -266,7 +273,13 @@
                         </ul>
                     </div>
                 </div>
-              
+                <div class="mt-6">
+                    <h4 class="font-semibold text-lg text-sky-700 mb-2">✨ Khám phá ràng buộc với Gemini</h4>
+                    <p class="text-sm mb-2">Nhập một mô tả về ràng buộc hoặc tình huống bạn muốn tìm hiểu thêm (ví dụ: "Giảng viên không muốn dạy sáng thứ 2 và chiều thứ 6", "Lớp học thực hành cần phòng máy tính").</p>
+                    <textarea id="constraintInput" class="w-full p-2 border border-slate-300 rounded-md focus:ring-sky-500 focus:border-sky-500" rows="3" placeholder="Nhập mô tả ràng buộc ở đây..."></textarea>
+                    <button id="explainConstraintBtn" class="gemini-button mt-2" onclick="explainConstraint()">Giải thích/Gợi ý về ràng buộc này <span id="constraintSpinner" class="loading-spinner hidden"></span></button>
+                    <div id="constraintExplanationArea" class="gemini-response-area hidden mt-2"></div>
+                </div>
             </section>
 
             <section id="ungDungGA" class="content-section card">
@@ -535,17 +548,14 @@ void mutate(Chromosome& c) {
                     <li>Bổ sung và tinh chỉnh các ràng buộc mềm, cơ chế đánh giá ưu tiên linh hoạt.</li>
                     <li>Phát triển giao diện người dùng thân thiện hơn để dễ dàng nhập liệu và xem kết quả.</li>
                     <li>Nghiên cứu khả năng tích hợp giải pháp vào các hệ thống quản lý đào tạo thực tế.</li>
-                    <li>Tận dụng AI (như Gemini API) để hỗ trợ người dùng trong việc định nghĩa ràng buộc, phân tích kết quả và gợi ý cải tiến.</li>
                 </ul>
-
-               
                 <p class="mt-4">Qua quá trình thực hiện, đồ án không chỉ giúp nhóm hiểu sâu hơn về thuật toán di truyền mà còn rèn luyện kỹ năng lập trình, tư duy giải quyết vấn đề và khả năng áp dụng lý thuyết vào các bài toán thực tiễn.</p>
             </section>
         </main>
 
         <footer class="text-center mt-12 py-6 border-t-2 border-slate-300">
             <p class="text-slate-600">&copy; 2025 - Nhóm Sinh Viên Thực Hiện Đồ Án (Trường Đại học Vinh)</p>
-            <p class="text-sm text-slate-500">Nội dung đồ án "Ứng Dụng Thuật Toán Genetic Algorithm Để Giải Bài Toán Lập Lịch"</p>
+            <p class="text-sm text-slate-500">Dựa trên nội dung đồ án "Ứng Dụng Thuật Toán Genetic Algorithm Để Giải Bài Toán Lập Lịch"</p>
         </footer>
     </div>
 
@@ -554,6 +564,77 @@ void mutate(Chromosome& c) {
         const tabButtons = document.querySelectorAll('.tab-button');
         const contentSections = document.querySelectorAll('.content-section');
         let fitnessChartInstance = null;
+
+        const GEMINI_API_KEY = ""; // Leave empty, Canvas will provide it
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+        async function callGeminiAPI(promptText) {
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: promptText }] }]
+            };
+            try {
+                const response = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Gemini API Error:", errorData);
+                    return `Lỗi khi gọi API: ${response.statusText}. Chi tiết: ${JSON.stringify(errorData.error?.message || errorData)}`;
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    return "Không nhận được phản hồi hợp lệ từ AI.";
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return "Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại.";
+            }
+        }
+
+        async function explainGAStep(stepName, displayAreaId) {
+            const displayArea = document.getElementById(displayAreaId);
+            if (!displayArea) return;
+
+            displayArea.classList.remove('hidden');
+            displayArea.innerHTML = `<p class="italic text-slate-600">Đang tải giải thích cho "${stepName}"... <span class="loading-spinner"></span></p>`;
+            
+            const prompt = `Giải thích bước "${stepName}" trong Giải thuật Di truyền một cách đơn giản, dễ hiểu cho sinh viên đang tìm hiểu về thuật toán này. Tập trung vào mục đích và cách thức hoạt động cơ bản của bước đó.`;
+            const explanation = await callGeminiAPI(prompt);
+            displayArea.innerHTML = `<p class="font-semibold text-sky-700">Giải thích cho: ${stepName}</p><p>${explanation.replace(/\n/g, '<br>')}</p>`;
+        }
+
+        async function explainConstraint() {
+            const constraintInput = document.getElementById('constraintInput');
+            const explanationArea = document.getElementById('constraintExplanationArea');
+            const spinner = document.getElementById('constraintSpinner');
+            const button = document.getElementById('explainConstraintBtn');
+
+            if (!constraintInput.value.trim()) {
+                explanationArea.innerHTML = "<p class='text-red-600'>Vui lòng nhập mô tả ràng buộc.</p>";
+                explanationArea.classList.remove('hidden');
+                return;
+            }
+
+            spinner.classList.remove('hidden');
+            button.disabled = true;
+            explanationArea.classList.remove('hidden');
+            explanationArea.innerHTML = `<p class="italic text-slate-600">Đang phân tích ràng buộc... <span class="loading-spinner"></span></p>`;
+
+            const prompt = `Tôi đang tìm hiểu về ràng buộc trong bài toán lập lịch thời khóa biểu. Hãy giải thích hoặc đưa ra gợi ý về ràng buộc sau: "${constraintInput.value.trim()}". Cho biết đây có thể là loại ràng buộc gì (cứng hay mềm), nó ảnh hưởng thế nào đến việc xếp lịch, và có thể có những giải pháp hoặc lưu ý gì khi xử lý ràng buộc này trong thực tế.`;
+            const explanation = await callGeminiAPI(prompt);
+            
+            explanationArea.innerHTML = explanation.replace(/\n/g, '<br>');
+            spinner.classList.add('hidden');
+            button.disabled = false;
+        }
+
 
         function showTab(tabId) {
             tabButtons.forEach(button => {
@@ -572,27 +653,31 @@ void mutate(Chromosome& c) {
             if (tabId === 'caiDatKetQua') {
                 renderFitnessChart();
             }
+            // Hide Gemini response areas when switching tabs
+            const gaStepExplanationArea = document.getElementById('gaStepExplanationArea');
+            if (gaStepExplanationArea) gaStepExplanationArea.classList.add('hidden');
+            const constraintExplanationArea = document.getElementById('constraintExplanationArea');
+            if (constraintExplanationArea) constraintExplanationArea.classList.add('hidden');
         }
 
         function generateMockFitnessData(generations = 100, startFitness = 0.1, endFitness = 0.98) {
             const data = [];
             const labels = [];
             let currentFitness = startFitness;
-            const incrementStep = (endFitness - startFitness) / (generations * 0.8); // Faster increase initially
+            const incrementStep = (endFitness - startFitness) / (generations * 0.8); 
 
             for (let i = 1; i <= generations; i++) {
                 labels.push(`Gen ${i}`);
-                if (i < generations * 0.1) { // Slow start
+                if (i < generations * 0.1) { 
                      currentFitness += Math.random() * incrementStep * 0.2;
                 } else if (i < generations * 0.8) {
                     currentFitness += Math.random() * incrementStep + incrementStep * 0.5;
-                } else { // Plateauing
+                } else { 
                     currentFitness += Math.random() * incrementStep * 0.3;
                 }
-                currentFitness = Math.min(currentFitness, endFitness + Math.random()*0.02); // Ensure it can reach near endFitness
+                currentFitness = Math.min(currentFitness, endFitness + Math.random()*0.02); 
                 data.push(Math.max(0, currentFitness));
             }
-             // Ensure the last point is close to the target endFitness
             if (data.length > 0) {
                 data[data.length -1] = Math.min(0.99, Math.max(data[data.length-1], endFitness - 0.01 + Math.random() * 0.02));
             }
@@ -616,8 +701,8 @@ void mutate(Chromosome& c) {
                     datasets: [{
                         label: 'Độ thích nghi của cá thể tốt nhất',
                         data: data,
-                        borderColor: '#0ea5e9', // sky-500
-                        backgroundColor: 'rgba(14, 165, 233, 0.1)', // sky-500 with opacity
+                        borderColor: '#0ea5e9', 
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)', 
                         tension: 0.3,
                         fill: true,
                         pointRadius: 2,
@@ -643,7 +728,6 @@ void mutate(Chromosome& c) {
                             },
                             ticks: {
                                 callback: function(value, index, values) {
-                                    // Display every 10th label or so to avoid clutter
                                     return (index % 10 === 0 || index === values.length -1) ? labels[index] : '';
                                 }
                             }
@@ -665,91 +749,6 @@ void mutate(Chromosome& c) {
             });
         }
         
-        // --- Gemini API Integration ---
-        const API_KEY = ""; // API Key will be injected by the environment if needed.
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-
-        async function callGeminiAPI(prompt, outputElementId) {
-            const outputElement = document.getElementById(outputElementId);
-            if (!outputElement) {
-                console.error("Output element not found:", outputElementId);
-                return;
-            }
-            outputElement.innerHTML = '<p class="text-slate-500">Đang xử lý yêu cầu, vui lòng đợi...</p>';
-
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: prompt }] }]
-            };
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error("API Error:", errorData);
-                    outputElement.innerHTML = `<p class="text-red-500">Lỗi khi gọi API: ${errorData.error?.message || response.statusText}</p>`;
-                    return;
-                }
-
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    outputElement.innerText = text; // Using innerText to preserve line breaks from Gemini
-                } else {
-                    console.error("Unexpected API response structure:", result);
-                    // Check for safety ratings or blocked prompts
-                    if (result.promptFeedback && result.promptFeedback.blockReason) {
-                         outputElement.innerHTML = `<p class="text-orange-500">Yêu cầu của bạn có thể đã bị chặn vì lý do an toàn: ${result.promptFeedback.blockReason}. Vui lòng thử lại với một yêu cầu khác.</p>`;
-                    } else if (result.candidates && result.candidates.length > 0 && result.candidates[0].finishReason === "SAFETY") {
-                         outputElement.innerHTML = `<p class="text-orange-500">Phản hồi đã bị chặn vì lý do an toàn. Vui lòng thử lại với một yêu cầu khác.</p>`;
-                    }
-                    else {
-                        outputElement.innerHTML = '<p class="text-red-500">Không nhận được nội dung hợp lệ từ API.</p>';
-                    }
-                }
-
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                outputElement.innerHTML = `<p class="text-red-500">Lỗi kết nối hoặc xử lý: ${error.message}</p>`;
-            }
-        }
-
-        // Function for Constraint Suggester
-        async function suggestConstraints() {
-            const problemDescription = document.getElementById('constraintProblemInput').value;
-            if (!problemDescription.trim()) {
-                document.getElementById('constraintSuggestionOutput').innerHTML = '<p class="text-orange-500">Vui lòng nhập mô tả vấn đề để nhận gợi ý.</p>';
-                return;
-            }
-            const prompt = `Với vai trò là một chuyên gia về giải thuật di truyền và lập lịch thời khóa biểu đại học, hãy phân tích mô tả vấn đề sau đây và gợi ý các ràng buộc (cứng hoặc mềm) có thể thêm vào mô hình GA để giải quyết hoặc cải thiện tình hình. Giải thích ngắn gọn từng gợi ý.
-Vấn đề: "${problemDescription}"
-
-Gợi ý ràng buộc:`;
-            await callGeminiAPI(prompt, 'constraintSuggestionOutput');
-        }
-
-        // Function for Brainstorm Timetable Improvements
-        async function suggestImprovements() {
-            const improvementGoals = document.getElementById('improvementInput').value;
-            if (!improvementGoals.trim()) {
-                document.getElementById('improvementSuggestionOutput').innerHTML = '<p class="text-orange-500">Vui lòng nhập vấn đề hoặc mục tiêu cải tiến.</p>';
-                return;
-            }
-            const prompt = `Là một chuyên gia tư vấn tối ưu hóa thời khóa biểu, dựa trên các vấn đề hoặc mục tiêu sau, hãy đưa ra các ý tưởng và đề xuất cải tiến sáng tạo cho một thời khóa biểu đại học. Cân nhắc các khía cạnh như sự hài lòng của sinh viên, giảng viên, sử dụng hiệu quả tài nguyên.
-Vấn đề/Mục tiêu: "${improvementGoals}"
-
-Đề xuất cải tiến:`;
-            await callGeminiAPI(prompt, 'improvementSuggestionOutput');
-        }
-        
-        // Initialize first tab
         document.addEventListener('DOMContentLoaded', () => {
             showTab('gioiThieu');
         });
