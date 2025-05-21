@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng Dụng GA Giải Bài Toán Lập Lịch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Visualization & Content Choices:
+        - Report Info: GA concepts (Ch1) -> Goal: Inform -> Viz/Method: Structured text, HTML/CSS diagram for GA steps -> Interaction: Click to expand details -> Justification: Clear explanation of core concepts.
+        - Report Info: Timetable representation (Ch2, Fig 2.1-2.4) -> Goal: Organize/Inform -> Viz/Method: HTML tables/divs mimicking matrix -> Interaction: Static display -> Justification: Visual clarity of data structure.
+        - Report Info: Code snippets (Ch3, Fig 3.1-3.5) -> Goal: Inform -> Viz/Method: Pre-formatted code blocks -> Interaction: Static display -> Justification: Show implementation details.
+        - Report Info: Experimental results (Ch3, Fitness=1, 100 generations) -> Goal: Inform/Compare (implicitly over time) -> Viz/Method: Chart.js line chart (mock data showing trend) -> Interaction: Hover for tooltips -> Justification: Dynamic visualization of algorithm performance.
+        - Report Info: Constraints (Ch2) -> Goal: Inform -> Viz/Method: Lists/Tables -> Interaction: Static -> Justification: Clear presentation of rules.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind's slate-50 */
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            border-color: #0284c7; /* Tailwind's sky-600 */
+            color: #0284c7;
+            background-color: #e0f2fe; /* Tailwind's sky-100 */
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .code-block {
+            background-color: #1e293b; /* Tailwind's slate-800 */
+            color: #e2e8f0; /* Tailwind's slate-200 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px; /* Example max-width */
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px; /* Base height */
+            max-height: 400px; /* Max height */
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .chart-container {
+                height: 400px;
+            }
+        }
+        h2 {
+            font-size: 1.75rem; /* text-2xl */
+            font-weight: 600; /* font-semibold */
+            color: #1e3a8a; /* Tailwind's blue-800 */
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #93c5fd; /* Tailwind's blue-300 */
+            padding-bottom: 0.5rem;
+        }
+        h3 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            color: #1d4ed8; /* Tailwind's blue-700 */
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-lg */
+            padding: 1.5rem; /* p-6 */
+            margin-bottom: 1.5rem;
+        }
+        .ga-step-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .ga-step {
+            background-color: #e0f2fe; /* sky-100 */
+            color: #0c4a6e; /* sky-800 */
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            border: 1px solid #7dd3fc; /* sky-300 */
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+        .ga-arrow {
+            font-size: 1.5rem;
+            color: #0ea5e9; /* sky-500 */
+        }
+        .gemini-feature-container {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed #cbd5e1; /* slate-300 */
+        }
+        .gemini-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1; /* slate-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            margin-bottom: 0.75rem;
+            resize: vertical;
+        }
+        .gemini-button {
+            background-color: #38bdf8; /* sky-500 */
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            transition: background-color 0.3s ease;
+        }
+        .gemini-button:hover {
+            background-color: #0ea5e9; /* sky-600 */
+        }
+        .gemini-output {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f1f5f9; /* slate-100 */
+            border: 1px solid #e2e8f0; /* slate-200 */
+            border-radius: 0.375rem; /* rounded-md */
+            min-height: 50px;
+            white-space: pre-wrap; /* To preserve formatting from LLM */
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-sky-700">Đồ Án: Ứng Dụng Giải Thuật Di Truyền (GA) Để Giải Bài Toán Lập Lịch</h1>
+        </header>
+
+        <nav class="mb-8">
+            <div class="flex flex-wrap justify-center gap-2 md:gap-4 border-b-2 border-slate-300 pb-4">
+                <button class="tab-button active px-4 py-2 rounded-md border-2 border-transparent font-medium" onclick="showTab('gioiThieu')">Giới Thiệu</button>
+                <button class="tab-button px-4 py-2 rounded-md border-2 border-transparent font-medium" onclick="showTab('tongQuanGA')">Tổng Quan GA</button>
+                <button class="tab-button px-4 py-2 rounded-md border-2 border-transparent font-medium" onclick="showTab('baiToanLapLich')">Bài Toán Lập Lịch</button>
+                <button class="tab-button px-4 py-2 rounded-md border-2 border-transparent font-medium" onclick="showTab('ungDungGA')">Ứng Dụng GA</button>
+                <button class="tab-button px-4 py-2 rounded-md border-2 border-transparent font-medium" onclick="showTab('caiDatKetQua')">Cài Đặt & Kết Quả</button>
+                <button class="tab-button px-4 py-2 rounded-md border-2 border-transparent font-medium" onclick="showTab('ketLuan')">Kết Luận</button>
+            </div>
+        </nav>
+
+        <main>
+            <section id="gioiThieu" class="content-section active card">
+                <h2>Lời Nói Đầu / Giới Thiệu Chung</h2>
+                <p class="mb-4">Trong thời đại khoa học – công nghệ phát triển mạnh mẽ, các bài toán tối ưu ngày càng đóng vai trò quan trọng. Bài toán lập lịch là một trong những bài toán tối ưu điển hình, được quan tâm rộng rãi. Giải thuật Di truyền (Genetic Algorithm - GA), mô phỏng quá trình tiến hóa tự nhiên, đã chứng minh tính hiệu quả trong việc giải quyết các bài toán phức tạp này.</p>
+                <p class="mb-4">Đồ án này tập trung vào việc áp dụng kiến thức từ học phần "Phân tích và Thiết kế Thuật toán" để ứng dụng GA giải quyết bài toán lập lịch thời khóa biểu cho trường đại học. Mục tiêu không chỉ là củng cố lý thuyết về thuật toán tiến hóa mà còn rèn luyện kỹ năng phân tích, thiết kế và cài đặt thuật toán cho một bài toán thực tế. Trang này cũng tích hợp các tính năng AI tiên tiến sử dụng Gemini API để hỗ trợ phân tích và cải tiến bài toán.</p>
+                <p>Trang web này sẽ giúp bạn tìm hiểu sâu hơn về các khía cạnh của đồ án, từ cơ sở lý thuyết của GA đến cách nó được áp dụng cụ thể để giải quyết vấn đề lập lịch, cùng các công cụ AI hỗ trợ.</p>
+            </section>
+
+            <section id="tongQuanGA" class="content-section card">
+                <h2>Chương 1: Tổng Quan về Giải Thuật Di Truyền (GAs)</h2>
+                <p class="mb-4">Giải thuật Di truyền là một kỹ thuật tìm kiếm và tối ưu hóa lấy cảm hứng từ quá trình tiến hóa tự nhiên. Nó hoạt động trên một quần thể các giải pháp tiềm năng, áp dụng các toán tử di truyền như chọn lọc, lai ghép và đột biến để dần dần cải thiện chất lượng giải pháp qua các thế hệ.</p>
+                
+                <h3>1.1. Tìm hiểu chung về GAs</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Nguồn gốc:</strong> Dựa trên lý thuyết tiến hóa của Charles Darwin.</li>
+                    <li><strong>Phát triển:</strong> John Holland (1975) áp dụng vào hệ thống nhân tạo.</li>
+                    <li><strong>Định nghĩa:</strong> Kỹ thuật khoa học máy tính tìm giải pháp cho bài toán tối ưu tổ hợp.</li>
+                    <li><strong>Nguyên lý:</strong> Vận dụng di truyền, đột biến, chọn lọc tự nhiên, và trao đổi chéo.</li>
+                </ul>
+
+                <h3>1.2. Các thuật ngữ cơ bản</h3>
+                 <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Cá thể (Nhiễm sắc thể - NST):</strong> Một giải pháp tiềm năng cho bài toán.</li>
+                    <li><strong>Gen:</strong> Một thành phần của cá thể, đại diện cho một đặc điểm của giải pháp.</li>
+                    <li><strong>Quần thể:</strong> Một tập hợp các cá thể.</li>
+                    <li><strong>Độ thích nghi (Fitness):</strong> Một thước đo đánh giá chất lượng của cá thể.</li>
+                </ul>
+
+                <h3>1.3. Các bước cơ bản của giải thuật di truyền</h3>
+                <div class="ga-step-diagram my-6">
+                    <div class="ga-step">B1: Khởi tạo quần thể ban đầu</div>
+                    <div class="ga-arrow">↓</div>
+                    <div class="ga-step">B2: Đánh giá độ thích nghi</div>
+                    <div class="ga-arrow">↓</div>
+                    <div class="ga-step">B3: Kiểm tra điều kiện dừng</div>
+                    <div class="ga-arrow">↘ (Dừng) &nbsp;&nbsp;&nbsp; ↙ (Tiếp tục)</div>
+                    <div class="ga-step" style="width: 45%; float: left; margin-right: 5%;">Lựa chọn giải pháp tốt nhất</div>
+                    <div class="ga-step" style="width: 45%; float: right;">B4: Sinh sản (Chọn lọc)</div>
+                    <div style="clear:both;" class="ga-arrow">↓ (Từ Sinh sản)</div>
+                     <div class="ga-step">B5: Lai ghép</div>
+                    <div class="ga-arrow">↓</div>
+                    <div class="ga-step">B6: Đột biến</div>
+                    <div class="ga-arrow">↺ (Lặp lại từ B2)</div>
+                </div>
+                <div style="clear:both;"></div>
+
+
+                <h3>1.4. Các toán tử của thuật toán di truyền</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Chọn lọc (Selection):</strong> Lựa chọn các cá thể tốt nhất từ quần thể hiện tại để tạo ra thế hệ tiếp theo. Ví dụ: Chọn lọc Roulette Wheel, Chọn lọc Tournament.</li>
+                    <li><strong>Lai ghép (Crossover):</strong> Kết hợp thông tin di truyền từ hai cá thể cha mẹ để tạo ra các cá thể con mới. Ví dụ: Lai ghép một điểm, hai điểm.</li>
+                    <li><strong>Đột biến (Mutation):</strong> Thay đổi ngẫu nhiên một hoặc một vài gen trong cá thể để duy trì sự đa dạng di truyền và tránh hội tụ sớm.</li>
+                </ul>
+
+                <h3>1.5. Các tham số của giải thuật di truyền</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Kích thước quần thể (Population Size):</strong> Số lượng cá thể trong mỗi thế hệ.</li>
+                    <li><strong>Xác suất lai ghép (Crossover Rate):</strong> Tần suất thực hiện toán tử lai ghép.</li>
+                    <li><strong>Xác suất đột biến (Mutation Rate):</strong> Tần suất thực hiện toán tử đột biến.</li>
+                </ul>
+                 <p>Việc lựa chọn các tham số này ảnh hưởng lớn đến hiệu suất và khả năng tìm kiếm của GA.</p>
+            </section>
+
+            <section id="baiToanLapLich" class="content-section card">
+                <h2>Chương 2: Phân Tích Bài Toán Lập Lịch Thời Khóa Biểu</h2>
+                <p class="mb-4">Bài toán lập lịch thời khóa biểu đại học là một bài toán tối ưu phức tạp, yêu cầu phân bổ các lớp học, môn học, giảng viên và phòng học vào các khung thời gian sao cho thỏa mãn nhiều ràng buộc và mục tiêu khác nhau.</p>
+
+                <h3>1. Các đặc tính của bài toán lập lịch</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Tài nguyên:</strong> Giảng viên, phòng học, thiết bị.</li>
+                    <li><strong>Tác vụ:</strong> Các buổi học của từng môn.</li>
+                    <li><strong>Ràng buộc:</strong> Điều kiện phải được thỏa mãn (ví dụ: một giảng viên không thể dạy hai lớp cùng lúc).</li>
+                    <li><strong>Mục tiêu:</strong> Tiêu chí đánh giá chất lượng lịch trình (ví dụ: giảm thiểu số buổi học trống của sinh viên).</li>
+                </ul>
+                
+                <h3>2. Dữ liệu bài toán</h3>
+                <p class="mb-2">Để giải bài toán, cần các thông tin chi tiết về:</p>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li>Danh sách các cơ sở, khoa, khóa học, học phần, lớp học.</li>
+                    <li>Danh sách giảng viên và phân công giảng dạy.</li>
+                    <li>Danh sách phòng học (sức chứa, loại phòng).</li>
+                    <li>Số tiết của từng môn học.</li>
+                    <li>Các yêu cầu về thời gian của giảng viên, nguyện vọng của lớp.</li>
+                </ul>
+
+                <h3>3. Các ràng buộc</h3>
+                <p class="mb-2">Ràng buộc là yếu tố then chốt, được chia thành hai loại:</p>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold text-lg text-sky-700 mb-2">Ràng buộc cứng (Hard Constraints)</h4>
+                        <p class="text-sm mb-1">Là các điều kiện bắt buộc phải thỏa mãn, nếu vi phạm thì lịch trình không hợp lệ.</p>
+                        <ul class="list-decimal list-inside text-sm pl-4">
+                            <li>Một lớp-môn học phải được dạy trọn vẹn trong một buổi.</li>
+                            <li>Một số lớp-môn học không được xếp vào các tiết cụ thể.</li>
+                            <li>Lớp-môn học có yêu cầu phòng riêng phải được xếp đúng loại phòng.</li>
+                            <li>Tại một thời điểm, một phòng chỉ được gán cho một lớp-môn học.</li>
+                            <li>Số sinh viên phải phù hợp với sức chứa của phòng.</li>
+                            <li>Một giảng viên không thể dạy hai lớp khác nhau cùng một thời điểm.</li>
+                            <li>Một lớp không thể học hai môn khác nhau cùng một thời điểm.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg text-sky-700 mb-2">Ràng buộc mềm (Soft Constraints)</h4>
+                        <p class="text-sm mb-1">Là các điều kiện mong muốn, vi phạm không làm lịch trình mất hiệu lực nhưng làm giảm chất lượng.</p>
+                        <ul class="list-decimal list-inside text-sm pl-4">
+                            <li>Hạn chế ngày học cả 2 buổi sáng và chiều cho sinh viên.</li>
+                            <li>Các tiết học của một buổi nên liên tục, không có tiết trống.</li>
+                            <li>Các lớp-môn học không ưu tiên nên xếp vào cuối tuần.</li>
+                            <li>Tránh xếp các lớp-môn học của một lớp quá rải rác.</li>
+                            <li>Các nhóm lớp cùng môn nên xếp thành khối.</li>
+                            <li>Các lớp-môn học cùng buổi của một lớp nên học ở các phòng gần nhau.</li>
+                            <li>Tối ưu sức chứa phòng (tránh phòng lớn cho lớp ít sinh viên).</li>
+                        </ul>
+                    </div>
+                </div>
+              
+            </section>
+
+            <section id="ungDungGA" class="content-section card">
+                <h2>Chương 2 (tiếp): Ứng Dụng GA vào Bài Toán Lập Lịch</h2>
+                <p class="mb-4">Giải thuật Di truyền được áp dụng để tìm kiếm một thời khóa biểu tối ưu bằng cách mô hình hóa bài toán và định nghĩa các thành phần của GA cho phù hợp.</p>
+
+                <h3>1. Mô hình hóa bài toán</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Đơn vị cơ bản:</strong> "Lớp – môn học" (một giảng viên dạy một môn cho một nhóm sinh viên tại một thời điểm và địa điểm cụ thể).</li>
+                    <li><strong>Biểu diễn cá thể (Nhiễm sắc thể):</strong>
+                        <p class="ml-4 mb-2">Một cá thể đại diện cho một thời khóa biểu hoàn chỉnh. Trong đồ án, một ma trận (R)ij được sử dụng:</p>
+                        <ul class="list-disc list-inside ml-8 mb-2 text-sm">
+                            <li>Mỗi dòng (i): tương ứng với một phòng học.</li>
+                            <li>Mỗi cột (j): tương ứng với một_thứ_tiết_bắt_đầu.</li>
+                            <li>Phần tử (rij): là một lớp-môn học cụ thể (hoặc trống).</li>
+                        </ul>
+                        <p class="ml-4"><em>Ví dụ (minh họa cấu trúc):</em></p>
+                        <div class="overflow-x-auto my-2">
+                            <table class="min-w-full text-sm border border-slate-300">
+                                <thead class="bg-slate-100">
+                                    <tr>
+                                        <th class="border p-2">Phòng / Thời gian</th>
+                                        <th class="border p-2">Thứ 2 - Tiết 1-2</th>
+                                        <th class="border p-2">Thứ 2 - Tiết 3-4</th>
+                                        <th class="border p-2">...</th>
+                                        <th class="border p-2">Thứ 3 - Tiết 1-2</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border p-2 font-medium">Phòng A101</td>
+                                        <td class="border p-2">Toán rời rạc - Lớp 1</td>
+                                        <td class="border p-2"></td>
+                                        <td class="border p-2">...</td>
+                                        <td class="border p-2">CTDL&GT - Lớp 2</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border p-2 font-medium">Phòng B203</td>
+                                        <td class="border p-2"></td>
+                                        <td class="border p-2">Lập trình C++ - Lớp 1</td>
+                                        <td class="border p-2">...</td>
+                                        <td class="border p-2"></td>
+                                    </tr>
+                                     <tr>
+                                        <td class="border p-2 font-medium">...</td>
+                                        <td class="border p-2">...</td>
+                                        <td class="border p-2">...</td>
+                                        <td class="border p-2">...</td>
+                                        <td class="border p-2">...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </li>
+                    <li><strong>Khởi tạo quần thể:</strong> Tạo ra một tập hợp các thời khóa biểu (cá thể) ngẫu nhiên hoặc theo một số quy tắc heuristic ban đầu. Kích thước quần thể (ví dụ: 50 cá thể) cần được lựa chọn phù hợp.</li>
+                    <li><strong>Hàm lượng giá (Fitness Function):</strong>
+                        <p class="ml-4">Đánh giá "chất lượng" của mỗi thời khóa biểu. Hàm này thường dựa trên số lượng vi phạm ràng buộc (cả cứng và mềm). Thời khóa biểu có ít vi phạm hơn (hoặc điểm phạt thấp hơn) sẽ có độ thích nghi cao hơn.</p>
+                        <p class="ml-4">Công thức ví dụ: `Fitness = 1 / (1 + Tổng_điểm_phạt_vi_phạm)`</p>
+                    </li>
+                </ul>
+
+                <h3>2. Các giai đoạn xử lý trong đồ án</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Giai đoạn 1: Xử lý ràng buộc ở mức lớp học.</strong> Tập trung tạo lịch học hợp lý cho từng lớp riêng lẻ trước.
+                        <ul class="list-circle list-inside ml-6 text-sm">
+                            <li>Mô hình cá thể: Lịch học của một lớp.</li>
+                            <li>Toán tử lai ghép/đột biến: Điều chỉnh lịch của từng lớp.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Giai đoạn 2: Xếp lịch học cho toàn bộ cơ sở.</strong> Tổng hợp lịch các lớp, giải quyết xung đột toàn cục.
+                         <ul class="list-circle list-inside ml-6 text-sm">
+                            <li>Mô hình cá thể: Lịch học tổng thể của trường.</li>
+                            <li>Hàm thích nghi: Đánh giá xung đột giữa các lớp, GV, phòng trên toàn trường.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="caiDatKetQua" class="content-section card">
+                <h2>Chương 3: Cài Đặt, Thực Nghiệm và Đánh Giá</h2>
+                <p class="mb-4">Chương này trình bày chi tiết về quá trình cài đặt thuật toán, môi trường thực nghiệm, dữ liệu sử dụng và kết quả đạt được, cùng với những đánh giá về giải pháp.</p>
+
+                <h3>1. Công nghệ và công cụ sử dụng</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Ngôn ngữ lập trình:</strong> C++ (chuẩn C++98).</li>
+                    <li><strong>Công cụ biên dịch:</strong> g++.</li>
+                    <li><strong>Nhập/Xuất liệu:</strong> Nhập từ bàn phím, xuất lịch học ra file CSV.</li>
+                    <li><strong>Môi trường thực thi:</strong> Console (Windows/Linux).</li>
+                </ul>
+
+                <h3>2. Mô hình dữ liệu trong cài đặt</h3>
+                 <ul class="list-disc list-inside mb-4 pl-4">
+                    <li><strong>Gene:</strong> Đại diện cho một ca học (lớp, giáo viên, phòng, thời gian).</li>
+                    <li><strong>Chromosome (Cá thể):</strong> Một lịch học hoàn chỉnh, là tập hợp các gene.</li>
+                    <li><strong>Population (Quần thể):</strong> Tập hợp các chromosome.</li>
+                </ul>
+                
+                <h3>3. Các bước cài đặt thuật toán GA (Minh họa bằng code C++)</h3>
+                <p class="mb-2">Dưới đây là các đoạn code minh họa các bước chính trong thuật toán di truyền được cài đặt:</p>
+                
+                <details class="mb-3">
+                    <summary class="font-medium text-sky-600 cursor-pointer hover:underline">Khởi tạo quần thể ban đầu (Hình 3.1)</summary>
+                    <pre class="code-block mt-2">
+// Tao ca the ngau nhien
+Chromosome createRandomChromosome() {
+    Chromosome c;
+    for (int i = 0; i < NUM_CLASSES; i++) {
+        Gene g;
+        g.classId = i;
+        g.teacherId = rand() % NUM_TEACHERS;
+        g.roomId = rand() % NUM_ROOMS;
+        g.timeSlot = rand() % NUM_TIMESLOTS;
+        c.push_back(g);
+    }
+    return c;
+}
+
+// Khoi tao quan the ban dau
+vector<Chromosome> initializePopulation(int populationSize) {
+    vector<Chromosome> population;
+    for (int i = 0; i < populationSize; i++) {
+        population.push_back(createRandomChromosome());
+    }
+    return population;
+}
+                    </pre>
+                </details>
+
+                <details class="mb-3">
+                    <summary class="font-medium text-sky-600 cursor-pointer hover:underline">Đánh giá fitness (Hình 3.2)</summary>
+                    <pre class="code-block mt-2">
+// Tinh diem fitness dua tren so vi pham rang buoc
+double calculateFitness(const Chromosome& c) {
+    int violations = 0;
+    // 1) Kiem tra phong va giao vien khong trung gio
+    for (int i = 0; i < c.size(); ++i) {
+        for (int j = i + 1; j < c.size(); ++j) {
+            if (c[i].timeSlot == c[j].timeSlot) {
+                if (c[i].teacherId == c[j].teacherId) violations++;
+                if (c[i].roomId == c[j].roomId) violations++;
+            }
+        }
+    }
+    // 2) Kiem tra giao vien khong day 2 lop lien tiep (theo thoi gian)
+    // ... (logic for this constraint)
+    // 3) Kiem tra giao vien khong day qua 2 tiet trong mot ngay
+    // map<pair<int,int>, int> teacherDayCount; // key = (teacherId, thu), value = so tiet
+    // ... (logic for this constraint)
+    return 1.0 / (1 + violations);
+}
+                    </pre>
+                </details>
+
+                <details class="mb-3">
+                    <summary class="font-medium text-sky-600 cursor-pointer hover:underline">Chọn lọc Tournament (Hình 3.3)</summary>
+                    <pre class="code-block mt-2">
+// Chon loc tournament
+Chromosome tournamentSelection(const vector<Chromosome>& population) {
+    int k = 3; // Tournament size
+    Chromosome best;
+    double bestFitness = -1;
+    for (int i = 0; i < k; i++) {
+        int idx = rand() % population.size();
+        double f = calculateFitness(population[idx]);
+        if (f > bestFitness) {
+            bestFitness = f;
+            best = population[idx];
+        }
+    }
+    return best;
+}
+                    </pre>
+                </details>
+
+                <details class="mb-3">
+                    <summary class="font-medium text-sky-600 cursor-pointer hover:underline">Lai ghép 1 điểm (Hình 3.4)</summary>
+                    <pre class="code-block mt-2">
+// Lai ghep 1 diem
+pair<Chromosome, Chromosome> crossover(const Chromosome& p1, const Chromosome& p2) {
+    Chromosome c1, c2;
+    int point = rand() % p1.size();
+    for (int i = 0; i < p1.size(); i++) {
+        if (i < point) {
+            c1.push_back(p1[i]);
+            c2.push_back(p2[i]);
+        } else {
+            c1.push_back(p2[i]);
+            c2.push_back(p1[i]);
+        }
+    }
+    return make_pair(c1, c2);
+}
+                    </pre>
+                </details>
+
+                <details class="mb-3">
+                    <summary class="font-medium text-sky-600 cursor-pointer hover:underline">Đột biến (Hình 3.5)</summary>
+                    <pre class="code-block mt-2">
+// Dot bien
+void mutate(Chromosome& c) {
+    int idx = rand() % c.size();
+    // Example: Change teacher, room, or timeslot for a random gene
+    c[idx].teacherId = rand() % NUM_TEACHERS;
+    c[idx].roomId = rand() % NUM_ROOMS;
+    c[idx].timeSlot = rand() % NUM_TIMESLOTS;
+}
+                    </pre>
+                </details>
+
+                <h3>4. Thực nghiệm và Kết quả</h3>
+                <p class="mb-2"><strong>Dữ liệu thực nghiệm mẫu:</strong></p>
+                <ul class="list-disc list-inside mb-4 pl-4 text-sm">
+                    <li>Số lớp: 4</li>
+                    <li>Số giáo viên: 3</li>
+                    <li>Số phòng học: 2</li>
+                    <li>Số thứ trong tuần: 3 (Thứ 2 - Thứ 4)</li>
+                    <li>Số tiết mỗi ngày: 2</li>
+                </ul>
+                <p class="mb-2"><strong>Kết quả chính:</strong></p>
+                <ul class="list-disc list-inside mb-4 pl-4 text-sm">
+                    <li>Chương trình chạy trong khoảng 100 thế hệ.</li>
+                    <li>Thuật toán tìm được lịch học với fitness đạt gần hoặc bằng 1 (ít hoặc không vi phạm ràng buộc).</li>
+                    <li>Lịch học được xuất ra file <code>schedule.csv</code>.</li>
+                </ul>
+
+                <h4 class="font-semibold text-lg text-sky-700 my-4">Biểu đồ cải thiện độ thích nghi qua các thế hệ (Minh họa)</h4>
+                <div class="chart-container">
+                    <canvas id="fitnessChart"></canvas>
+                </div>
+                <p class="text-sm text-center mt-2">Biểu đồ này minh họa xu hướng độ thích nghi của cá thể tốt nhất tăng dần qua các thế hệ, tiến tới giá trị tối ưu (ví dụ: fitness = 1).</p>
+
+                <h3>5. Đánh giá</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li>Giải thuật Di truyền là một phương pháp hiệu quả cho bài toán xếp lịch học phức tạp.</li>
+                    <li>Cơ chế lai ghép và đột biến giúp duy trì sự đa dạng và tránh kẹt ở cực trị địa phương.</li>
+                    <li><strong>Hạn chế:</strong>
+                        <ul class="list-circle list-inside ml-6 text-sm">
+                            <li>Hiệu năng và tốc độ hội tụ có thể giảm khi quy mô bài toán tăng (nhiều lớp, nhiều ràng buộc hơn).</li>
+                            <li>Chất lượng giải pháp phụ thuộc vào việc lựa chọn tham số (kích thước quần thể, tỷ lệ lai ghép/đột biến) và thiết kế hàm fitness.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section id="ketLuan" class="content-section card">
+                <h2>Kết Luận và Hướng Phát Triển</h2>
+                <p class="mb-4">Đồ án đã thành công trong việc nghiên cứu và triển khai thuật toán di truyền để giải quyết bài toán lập lịch học cho sinh viên đại học. Thuật toán cho thấy khả năng tìm kiếm các lịch học hợp lý, thỏa mãn nhiều ràng buộc thực tế.</p>
+                
+                <h3>Kết quả đạt được</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li>Cài đặt thuật toán GA bằng ngôn ngữ C++.</li>
+                    <li>Hệ thống có khả năng tự động sinh lịch học tối ưu dựa trên các tiêu chí đánh giá (hàm fitness).</li>
+                    <li>Tìm được các lịch học không trùng phòng, giáo viên, tiết dạy và hạn chế tối đa vi phạm ràng buộc.</li>
+                </ul>
+
+                <h3>Hạn chế</h3>
+                 <ul class="list-disc list-inside mb-4 pl-4">
+                    <li>Thời gian chạy có thể tăng đáng kể với dữ liệu đầu vào lớn.</li>
+                    <li>Có khả năng rơi vào cực trị địa phương nếu các tham số của GA không được điều chỉnh tốt.</li>
+                </ul>
+
+                <h3>Hướng phát triển tương lai</h3>
+                <ul class="list-disc list-inside mb-4 pl-4">
+                    <li>Kết hợp với các chiến lược chọn lọc nâng cao hơn (ví dụ: elitism).</li>
+                    <li>Áp dụng các kỹ thuật lai ghép và đột biến thông minh hơn, phù hợp đặc thù bài toán.</li>
+                    <li>Bổ sung và tinh chỉnh các ràng buộc mềm, cơ chế đánh giá ưu tiên linh hoạt.</li>
+                    <li>Phát triển giao diện người dùng thân thiện hơn để dễ dàng nhập liệu và xem kết quả.</li>
+                    <li>Nghiên cứu khả năng tích hợp giải pháp vào các hệ thống quản lý đào tạo thực tế.</li>
+                    <li>Tận dụng AI (như Gemini API) để hỗ trợ người dùng trong việc định nghĩa ràng buộc, phân tích kết quả và gợi ý cải tiến.</li>
+                </ul>
+
+               
+                <p class="mt-4">Qua quá trình thực hiện, đồ án không chỉ giúp nhóm hiểu sâu hơn về thuật toán di truyền mà còn rèn luyện kỹ năng lập trình, tư duy giải quyết vấn đề và khả năng áp dụng lý thuyết vào các bài toán thực tiễn.</p>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 py-6 border-t-2 border-slate-300">
+            <p class="text-slate-600">&copy; 2025 - Nhóm Sinh Viên Thực Hiện Đồ Án (Trường Đại học Vinh)</p>
+            <p class="text-sm text-slate-500">Nội dung đồ án "Ứng Dụng Thuật Toán Genetic Algorithm Để Giải Bài Toán Lập Lịch"</p>
+        </footer>
+    </div>
+
+    <script>
+        const tabs = ['gioiThieu', 'tongQuanGA', 'baiToanLapLich', 'ungDungGA', 'caiDatKetQua', 'ketLuan'];
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const contentSections = document.querySelectorAll('.content-section');
+        let fitnessChartInstance = null;
+
+        function showTab(tabId) {
+            tabButtons.forEach(button => {
+                button.classList.remove('active');
+                if (button.getAttribute('onclick').includes(tabId)) {
+                    button.classList.add('active');
+                }
+            });
+            contentSections.forEach(section => {
+                section.classList.remove('active');
+                if (section.id === tabId) {
+                    section.classList.add('active');
+                }
+            });
+
+            if (tabId === 'caiDatKetQua') {
+                renderFitnessChart();
+            }
+        }
+
+        function generateMockFitnessData(generations = 100, startFitness = 0.1, endFitness = 0.98) {
+            const data = [];
+            const labels = [];
+            let currentFitness = startFitness;
+            const incrementStep = (endFitness - startFitness) / (generations * 0.8); // Faster increase initially
+
+            for (let i = 1; i <= generations; i++) {
+                labels.push(`Gen ${i}`);
+                if (i < generations * 0.1) { // Slow start
+                     currentFitness += Math.random() * incrementStep * 0.2;
+                } else if (i < generations * 0.8) {
+                    currentFitness += Math.random() * incrementStep + incrementStep * 0.5;
+                } else { // Plateauing
+                    currentFitness += Math.random() * incrementStep * 0.3;
+                }
+                currentFitness = Math.min(currentFitness, endFitness + Math.random()*0.02); // Ensure it can reach near endFitness
+                data.push(Math.max(0, currentFitness));
+            }
+             // Ensure the last point is close to the target endFitness
+            if (data.length > 0) {
+                data[data.length -1] = Math.min(0.99, Math.max(data[data.length-1], endFitness - 0.01 + Math.random() * 0.02));
+            }
+            return { labels, data };
+        }
+
+        function renderFitnessChart() {
+            const ctx = document.getElementById('fitnessChart');
+            if (!ctx) return;
+
+            if (fitnessChartInstance) {
+                fitnessChartInstance.destroy();
+            }
+
+            const { labels, data } = generateMockFitnessData(100);
+
+            fitnessChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Độ thích nghi của cá thể tốt nhất',
+                        data: data,
+                        borderColor: '#0ea5e9', // sky-500
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)', // sky-500 with opacity
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0,
+                            title: {
+                                display: true,
+                                text: 'Giá trị Fitness'
+                            }
+                        },
+                        x: {
+                             title: {
+                                display: true,
+                                text: 'Thế hệ'
+                            },
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    // Display every 10th label or so to avoid clutter
+                                    return (index % 10 === 0 || index === values.length -1) ? labels[index] : '';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Fitness: ${context.parsed.y.toFixed(3)}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // --- Gemini API Integration ---
+        const API_KEY = ""; // API Key will be injected by the environment if needed.
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+
+        async function callGeminiAPI(prompt, outputElementId) {
+            const outputElement = document.getElementById(outputElementId);
+            if (!outputElement) {
+                console.error("Output element not found:", outputElementId);
+                return;
+            }
+            outputElement.innerHTML = '<p class="text-slate-500">Đang xử lý yêu cầu, vui lòng đợi...</p>';
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("API Error:", errorData);
+                    outputElement.innerHTML = `<p class="text-red-500">Lỗi khi gọi API: ${errorData.error?.message || response.statusText}</p>`;
+                    return;
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    outputElement.innerText = text; // Using innerText to preserve line breaks from Gemini
+                } else {
+                    console.error("Unexpected API response structure:", result);
+                    // Check for safety ratings or blocked prompts
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                         outputElement.innerHTML = `<p class="text-orange-500">Yêu cầu của bạn có thể đã bị chặn vì lý do an toàn: ${result.promptFeedback.blockReason}. Vui lòng thử lại với một yêu cầu khác.</p>`;
+                    } else if (result.candidates && result.candidates.length > 0 && result.candidates[0].finishReason === "SAFETY") {
+                         outputElement.innerHTML = `<p class="text-orange-500">Phản hồi đã bị chặn vì lý do an toàn. Vui lòng thử lại với một yêu cầu khác.</p>`;
+                    }
+                    else {
+                        outputElement.innerHTML = '<p class="text-red-500">Không nhận được nội dung hợp lệ từ API.</p>';
+                    }
+                }
+
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                outputElement.innerHTML = `<p class="text-red-500">Lỗi kết nối hoặc xử lý: ${error.message}</p>`;
+            }
+        }
+
+        // Function for Constraint Suggester
+        async function suggestConstraints() {
+            const problemDescription = document.getElementById('constraintProblemInput').value;
+            if (!problemDescription.trim()) {
+                document.getElementById('constraintSuggestionOutput').innerHTML = '<p class="text-orange-500">Vui lòng nhập mô tả vấn đề để nhận gợi ý.</p>';
+                return;
+            }
+            const prompt = `Với vai trò là một chuyên gia về giải thuật di truyền và lập lịch thời khóa biểu đại học, hãy phân tích mô tả vấn đề sau đây và gợi ý các ràng buộc (cứng hoặc mềm) có thể thêm vào mô hình GA để giải quyết hoặc cải thiện tình hình. Giải thích ngắn gọn từng gợi ý.
+Vấn đề: "${problemDescription}"
+
+Gợi ý ràng buộc:`;
+            await callGeminiAPI(prompt, 'constraintSuggestionOutput');
+        }
+
+        // Function for Brainstorm Timetable Improvements
+        async function suggestImprovements() {
+            const improvementGoals = document.getElementById('improvementInput').value;
+            if (!improvementGoals.trim()) {
+                document.getElementById('improvementSuggestionOutput').innerHTML = '<p class="text-orange-500">Vui lòng nhập vấn đề hoặc mục tiêu cải tiến.</p>';
+                return;
+            }
+            const prompt = `Là một chuyên gia tư vấn tối ưu hóa thời khóa biểu, dựa trên các vấn đề hoặc mục tiêu sau, hãy đưa ra các ý tưởng và đề xuất cải tiến sáng tạo cho một thời khóa biểu đại học. Cân nhắc các khía cạnh như sự hài lòng của sinh viên, giảng viên, sử dụng hiệu quả tài nguyên.
+Vấn đề/Mục tiêu: "${improvementGoals}"
+
+Đề xuất cải tiến:`;
+            await callGeminiAPI(prompt, 'improvementSuggestionOutput');
+        }
+        
+        // Initialize first tab
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('gioiThieu');
+        });
+
+    </script>
+</body>
+</html>
